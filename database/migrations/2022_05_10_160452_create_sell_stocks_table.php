@@ -13,10 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('locations', function (Blueprint $table) {
+        Schema::create('sell_stocks', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('address');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            $table->date('invoice_date')->nullable();
+            $table->float('total')->nullable();
+            $table->boolean('damage_lost')->default(0);
             $table->timestamps();
         });
     }
@@ -28,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('locations');
+        Schema::dropIfExists('sell_stocks');
     }
 };

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\OrderStockList;
 use App\Models\Product;
 use App\Models\ReceiveStock;
 use App\Models\Supplier;
@@ -19,14 +20,19 @@ class AdminReceiveStockController extends Controller
     {
         $suppliers = Supplier::orderBy('name')->pluck('name', 'id')->prepend('Select Supplier', '');
 
-        $receive_stocks = ReceiveStock::query()
-            ->when(request('supplier'), function($query){
-                $query->where('supplier_id', request('supplier'));
+        $receive_stocks = OrderStockList::query()
+            ->when(request('supplier'), function ($query) {
+                $query->whereRelation('order', 'supplier_id', request('supplier'));
             })
-            ->with('product.location:id,name')
-            ->with('supplier')
-            ->with('product:id,location_id,name,item_code')
+            ->when(request('date_start') && request('date_end'), function($query){
+                $query->whereBetween('updated_at', [request('date_start'), request('date_end')]);
+            })
+            ->with('order.supplier')
+            ->with('product')
+            ->where('status', 'receive')
             ->get();
+
+
 
         return view('admin.receive_stock.index', compact('receive_stocks', 'suppliers'));
     }
@@ -36,88 +42,90 @@ class AdminReceiveStockController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
-    {
-        $suppliers = Supplier::pluck('name', 'id')->prepend('Select Supplier', '');
-        $products = Product::Select('id', 'item_code', 'name')->get();
+    // public function create()
+    // {
+    //     $suppliers = Supplier::pluck('name', 'id')->prepend('Select Supplier', '');
+    //     $products = Product::with('location')->Select('id', 'item_code', 'name', 'location_id')->get();
 
-        return view('admin.receive_stock.create', compact('suppliers', 'products'));
-    }
+    //     return view('admin.receive_stock.create', compact('suppliers', 'products'));
+    // }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
+    // /**
+    //  * Store a newly created resource in storage.
+    //  *
+    //  * @param  \Illuminate\Http\Request  $request
+    //  * @return \Illuminate\Http\Response
+    //  */
+    // public function store(Request $request)
+    // {
 
-        $request->validate([
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'product_id' => ['required', 'exists:products,id'],
-            'qty' => ['required', 'integer'],
-            'price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
-        ]);
+    //     $request->validate([
+    //         'supplier_id' => ['required', 'exists:suppliers,id'],
+    //         'product_id' => ['required', 'exists:products,id'],
+    //         'qty' => ['required', 'integer'],
+    //         'price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
+    //     ]);
 
-        ReceiveStock::create($request->only('supplier_id', 'product_id', 'qty', 'price'));
+    //     ReceiveStock::create($request->only('supplier_id', 'product_id', 'qty', 'price'));
 
-        session()->flash('alert-type', 'success');
-        session()->flash('message', 'Success Added');
+    //     session()->flash('alert-type', 'success');
+    //     session()->flash('message', 'Success Added');
 
-        return (request('stay')) ? redirect()->back() : redirect()->route('admin.receive-stock.index');
-    }
+    //     return (request('stay')) ? redirect()->back() : redirect()->route('admin.receive-stock.index');
+    // }
 
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        $receive_stock = ReceiveStock::findOrFail($id);
+    // /**
+    //  * Show the form for editing the specified resource.
+    //  *
+    //  * @param  int  $id
+    //  * @return \Illuminate\Http\Response
+    //  */
+    // public function edit($id)
+    // {
+    //     $receive_stock = ReceiveStock::findOrFail($id);
 
-        $suppliers = Supplier::pluck('name', 'id')->prepend('Select Supplier', '');
-        $products = Product::Select('id', 'item_code', 'name')->get();
+    //     $suppliers = Supplier::pluck('name', 'id')->prepend('Select Supplier', '');
+    //     $products = Product::with('location')->Select('id', 'item_code', 'name', 'location_id')->get();
 
-        return view('admin.receive_stock.edit', compact('suppliers', 'products', 'receive_stock'));
-    }
+    //     return view('admin.receive_stock.edit', compact('suppliers', 'products', 'receive_stock'));
+    // }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        $receive_stock = ReceiveStock::findOrFail($id);
-        $request->validate([
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'product_id' => ['required', 'exists:products,id'],
-            'qty' => ['required', 'integer'],
-            'price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
-        ]);
+    // /**
+    //  * Update the specified resource in storage.
+    //  *
+    //  * @param  \Illuminate\Http\Request  $request
+    //  * @param  int  $id
+    //  * @return \Illuminate\Http\Response
+    //  */
+    // public function update(Request $request, $id)
+    // {
+    //     $receive_stock = ReceiveStock::findOrFail($id);
+    //     $request->validate([
+    //         'supplier_id' => ['required', 'exists:suppliers,id'],
+    //         'product_id' => ['required', 'exists:products,id'],
+    //         'qty' => ['required', 'integer'],
+    //         'price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
+    //     ]);
 
-        $receive_stock->update($request->only('supplier_id', 'product_id', 'qty', 'price'));
-        return redirect()->route('admin.receive-stock.index')->with(['alert-type' => 'success', 'message' => 'Success Updated']);
-    }
+    //     $receive_stock->update($request->only('supplier_id', 'product_id', 'qty', 'price'));
+    //     return redirect()->route('admin.receive-stock.index')->with(['alert-type' => 'success', 'message' => 'Success Updated']);
+    // }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
+    // /**
+    //  * Remove the specified resource from storage.
+    //  *
+    //  * @param  int  $id
+    //  * @return \Illuminate\Http\Response
+    //  */
+    // public function destroy($id)
+    // {
 
-        $receive_stock = ReceiveStock::findOrFail($id);
-        $receive_stock->delete();
+    //     $receive_stock = ReceiveStock::findOrFail($id);
+    //     $receive_stock->delete();
 
-        return redirect()->route('admin.receive-stock.index')->with(['alert-type' => 'success', 'message' => 'Success Deleted']);
-    }
+    //     return redirect()->route('admin.receive-stock.index')->with(['alert-type' => 'success', 'message' => 'Success Deleted']);
+    // }
+
+
 }

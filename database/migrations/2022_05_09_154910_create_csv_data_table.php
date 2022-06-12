@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
     /**
      * Run the migrations.
      *
@@ -14,13 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('receive_stocks', function (Blueprint $table) {
+        Schema::create('csv_data', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('supplier_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
-            $table->integer('qty');
-            $table->float('unit_price');
-            $table->float('total_price');
+            $table->text('data_id');
+            $table->json('header_data');
+            $table->json('csv_data');
             $table->timestamps();
         });
     }
@@ -32,7 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('receive_stocks');
+        Schema::dropIfExists('csv_data');
     }
-
 };

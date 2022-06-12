@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Imports\ProductImport;
 use App\Models\Category;
+use App\Models\CsvData;
 use App\Models\Location;
 use App\Models\Product;
+use App\Models\SubCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\HeadingRowImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminProductController extends Controller
 {
@@ -18,14 +22,17 @@ class AdminProductController extends Controller
      */
     public function index()
     {
-
-        $products = Product::with('category:id,name')
+        $categories = Category::all();
+        $products = Product::query()
+            ->when(request('category'), function($query){
+                $query->where('category_id', request('category'));
+            })
+            ->with('category:id,name')
             ->with('subcategory:id,name')
-            ->with('location:id,name')
             ->withSum('receiveStock as total_stock', 'qty')
             ->get();
 
-        return view('admin.product.index', compact('products'));
+        return view('admin.product.index', compact('products', 'categories'));
     }
 
     /**
@@ -36,9 +43,7 @@ class AdminProductController extends Controller
     public function create()
     {
         $categories = Category::pluck('name', 'id')->prepend('Select Category', '');
-        $locations = Location::pluck('name', 'id')->prepend('Select Location', '');
-
-        return view('admin.product.create', compact('categories', 'locations'));
+        return view('admin.product.create', compact('categories'));
     }
 
     /**
@@ -54,16 +59,18 @@ class AdminProductController extends Controller
             'item_code' => ['required', 'min:3', 'max:220', 'unique:products,item_code'],
             'name' => ['required', 'min:3', 'max:220'],
             'description' => ['required', 'min:3', 'max:220'],
-            'location_id' => ['required', 'exists:locations,id'],
+            'location' => ['required', 'min:3', 'max:220'],
             'category_id' => ['required', 'exists:categories,id'],
             'subcategory_id' => ['required', 'exists:sub_categories,id'],
             'price' => ['required', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/'],
             'sale_price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
+            'tax' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'warn_qty' => ['nullable', 'integer', 'min:1'],
         ], [
             'item_code.unique' => 'Item code already exists'
         ]);
 
-        Product::create($request->all());
+        Product::create($request->only('item_code', 'name', 'description', 'location', 'category_id', 'subcategory_id', 'price', 'sale_price', 'tax', 'warn_qty'));
         return redirect()->route('admin.product.index')->with([
             'alert-type' => 'success',
             'message' => 'Successfully Created',
@@ -82,9 +89,8 @@ class AdminProductController extends Controller
 
         $product = Product::findOrFail($id);
         $categories = Category::pluck('name', 'id')->prepend('Select Category', '');
-        $locations = Location::pluck('name', 'id')->prepend('Select Location', '');
 
-        return view('admin.product.edit', compact('categories', 'locations', 'product'));
+        return view('admin.product.edit', compact('categories', 'product'));
     }
 
     /**
@@ -102,16 +108,18 @@ class AdminProductController extends Controller
             'item_code' => ['required', 'min:3', 'max:220', 'unique:products,item_code,' . $product->id],
             'name' => ['required', 'min:3', 'max:220'],
             'description' => ['required', 'min:3', 'max:220'],
-            'location_id' => ['required', 'exists:locations,id'],
+            'location' => ['required', 'min:3', 'max:220'],
             'category_id' => ['required', 'exists:categories,id'],
             'subcategory_id' => ['required', 'exists:sub_categories,id'],
             'price' => ['required', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/'],
             'sale_price' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/', 'max:' . $request->price],
+            'tax' => ['nullable', 'numeric', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'warn_qty' => ['nullable', 'integer', 'min:1'],
         ], [
             'item_code.unique' => 'Item code already exists'
         ]);
 
-        $product->update($request->only('item_code', 'name', 'description', 'location_id', 'category_id', 'subcategory_id', 'price', 'sale_price'));
+        $product->update($request->only('item_code', 'name', 'description', 'location', 'category_id', 'subcategory_id', 'price', 'sale_price', 'tax', 'warn_qty'));
 
         return redirect()->route('admin.product.index')->with([
             'alert-type' => 'success',
@@ -140,7 +148,6 @@ class AdminProductController extends Controller
     {
         $products = Product::with('category:id,name')
             ->with('subcategory:id,name')
-            ->with('location:id,name')
             ->onlyTrashed()
             ->get();
 
@@ -157,5 +164,104 @@ class AdminProductController extends Controller
         return redirect()
             ->route('admin.product.index')
             ->with(['alert-type' => 'success', 'message' => 'Successfully Restore']);
+    }
+
+    public function import()
+    {
+        return view('admin.product.import');
+    }
+
+    public function importStore(Request $request)
+    {
+        $request->validate([
+            'import_file' => ['required', 'mimes:csv,txt', 'max:10240']
+        ], [
+            'import_fil.max' => 'The file must not be greater than 10 Mb.'
+        ]);
+
+        $heading = (new HeadingRowImport())->toArray($request->file('import_file'))[0][0];
+        $data = Excel::toArray(new ProductImport, $request->file('import_file'))[0];
+
+        if (count($heading) < 7 ||  count($heading) > 10) {
+            return back()->withInput()->withErrors([
+                'import_file' => 'column must not be less then 8 or greater then 10'
+            ]);
+        }
+
+        if (count($data) > 10000) {
+            return back()->withInput()->withErrors([
+                'import_file' => 'You can add only 1000 rows'
+            ]);
+        }
+
+        CsvData::create([
+            'data_id' => $data_id = rand(111111111, 999999999) . time(),
+            'header_data' => json_encode($heading),
+            'csv_data' => json_encode($data)
+        ]);
+
+        return redirect()->route('admin.product.import.form', $data_id);
+    }
+
+    public function importForm($id)
+    {
+        $csv = CsvData::select('id', 'data_id', 'header_data')->whereDataId($id)->firstOrFail();
+        return view('admin.product.import_form', compact('csv'));
+    }
+
+    public function importFormStore(Request $request, $id)
+    {
+        $csv = CsvData::whereDataId($id)->firstOrFail();
+        $importsData = json_decode($csv->csv_data);
+
+        $total_import = 0;
+        $total_error = 0;
+
+        foreach ($importsData as $data) {
+            try {
+
+                $req_category = $request->category;
+                $category = Category::firstOrCreate([
+                    'name' => $data->$req_category,
+                ]);
+
+                $req_subcategory = $request->subcategory;
+                $sub_category = SubCategory::firstOrCreate([
+                    'name' => $data->$req_subcategory,
+                    'category_id' => $category->id,
+                ]);
+
+                $location = $request->location;
+                $item_code = $request->item_code;
+                $name = $request->name;
+                $description = $request->description;
+                $price = $request->price;
+                $sale_price = (!empty($request->sale_price)) ? $request->sale_price : '';
+                $tax = (!empty($request->tax)) ? $request->tax : '';
+
+                Product::create([
+                    'item_code' => $data->$item_code,
+                    'name' => $data->$name,
+                    'description' => $data->$description,
+                    'price' => $data->$price,
+                    'sale_price' => (!empty($sale_price)) ? $data->$sale_price : null,
+                    'category_id' => $category->id,
+                    'subcategory_id' => $sub_category->id,
+                    'location' => $data->$location,
+                ]);
+                $total_import++;
+            } catch (\Throwable $e) {
+
+                $total_error++;
+            }
+        }
+
+        $message = $total_import . ' products successfully imported. ';
+        if ($total_error != 0) {
+            $message .= ' Failed to import ' . $total_error . ' products';
+        }
+
+        $csv->delete();
+        return redirect()->route('admin.product.index')->with(['alert-type' => 'success', 'message' => $message]);
     }
 }

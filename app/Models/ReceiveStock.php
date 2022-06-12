@@ -10,7 +10,7 @@ class ReceiveStock extends Model
     use HasFactory;
 
     protected $dates = ['deleted_at'];
-    protected $fillable = ['supplier_id', 'product_id', 'qty', 'price'];
+    protected $fillable = ['supplier_id', 'product_id', 'qty', 'unit_price', 'total_price'];
 
     public function product(){
         return $this->belongsTo(Product::class);

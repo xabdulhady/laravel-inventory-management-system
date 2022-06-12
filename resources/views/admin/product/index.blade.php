@@ -26,6 +26,25 @@
 </div>
 
 <div class="card">
+    <div class="card-header py-3">
+        <form action="{{ route('admin.product.index') }}" method="get">
+            <div class="row align-items-center m-0">
+                <div class="col-md-6 col-12 me-auto mb-md-0 mb-3">
+                    <select class="form-select" name="category" >
+                        <option value="" selected="">Select Category</option>
+                        @forelse ($categories as $category)
+                        <option value="{{ $category->id }}" @selected(request('category')==$category->id)>{{ $category->name }}</option>
+                        @empty
+                        @endforelse
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-12">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
             <table id="products_tbl" class="table table-striped table-bordered">
@@ -34,12 +53,12 @@
                         <th>Id</th>
                         <th>Item Code</th>
                         <th>Name</th>
-                        <th>Total Stock</th>
                         <th>Description</th>
                         <th>Price</th>
                         <th>Category</th>
                         <th>Sub Category</th>
                         <th>Location</th>
+                        <th>Warn Qty</th>
                         <th>Created At</th>
                         <th>Action</th>
                     </tr>
@@ -50,10 +69,9 @@
                         <td>{{ $product->id }}</td>
                         <td>{{ $product->item_code }}</td>
                         <td>{{ ucfirst($product->name) }}</td>
-                        <td>{{ $product->total_stock }}</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="popover" title=""
-                                data-bs-content="{{ $product->description }}" data-bs-trigger="hover focus"
+                            <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="popover"
+                                title="" data-bs-content="{{ $product->description }}" data-bs-trigger="hover focus"
                                 data-bs-placement="top">View</button>
                         </td>
                         <td>
@@ -67,7 +85,8 @@
                         </td>
                         <td>{{ $product->category->name ?? '' }}</td>
                         <td>{{ $product->subcategory->name ?? '' }}</td>
-                        <td>{{ $product->location->name ?? '' }}</td>
+                        <td>{{ $product->location ?? '' }}</td>
+                        <td>{{ $product->warn_qty }}</td>
                         <td>{{ $product->created_at->diffForHumans() }}</td>
                         <td>
                             <div class="table-actions gap-3 fs-6">

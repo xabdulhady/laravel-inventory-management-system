@@ -19,7 +19,8 @@ class Product extends Model
         'sale_price',
         'category_id',
         'subcategory_id',
-        'location_id'
+        'location',
+        'warn_qty'
     ];
 
     public function category()
@@ -32,13 +33,18 @@ class Product extends Model
         return $this->belongsTo(SubCategory::class, 'subcategory_id');
     }
 
-    public function location()
-    {
-        return $this->belongsTo(Location::class);
-    }
-
     public function receiveStock()
     {
-        return $this->hasMany(ReceiveStock::class);
+        return $this->hasMany(OrderStockList::class, 'product_id')->where('status', 'receive');
     }
+
+    public function sellStock()
+    {
+        return $this->hasMany(SellStockList::class, 'product_id');
+    }
+
+
+
+
+
 }

@@ -1,6 +1,6 @@
 @extends('master.admin-master')
 
-@section('title', 'Trash Customers')
+@section('title', 'Trash Products')
 
 @section('css')
 <link href="{{ asset('assets/plugins/datatable/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet" />
@@ -10,11 +10,11 @@
 
 
 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">Customers</div>
+    <div class="breadcrumb-title pe-3">Product</div>
     <div class="ps-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
-                <li class="breadcrumb-item active" aria-current="page">Trash Customers</li>
+                <li class="breadcrumb-item active" aria-current="page">Trash Products</li>
             </ol>
         </nav>
     </div>
@@ -36,6 +36,7 @@
                         <th>Location</th>
                         <th>Created At</th>
                         <th>Deleted At</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,8 +61,9 @@
                         </td>
                         <td>{{ $product->category->name ?? '' }}</td>
                         <td>{{ $product->subcategory->name ?? '' }}</td>
-                        <td>{{ $product->location->name ?? '' }}</td>
+                        <td>{{ $product->location }}</td>
                         <td>{{ $product->created_at->diffForHumans() }}</td>
+                        <td>{{ $product->deleted_at->diffForHumans() }}</td>
                         <td>
                             <form action="{{ route('admin.product.restore', $product->id) }}" method="POST">
                                 @csrf

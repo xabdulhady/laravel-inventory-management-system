@@ -10,6 +10,7 @@ class AdminFrontController extends Controller
 
     public function index()
     {
+        return redirect()->route('admin.product.index');
         return view('admin.dashboard.index');
     }
 

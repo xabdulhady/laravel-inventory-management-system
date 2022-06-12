@@ -55,7 +55,7 @@
                                 class="form-control @error('product_id') is-invalid @enderror" required>
                                 <option value="">Select Product</option>
                                 @forelse ($products as $product)
-                                <option value="{{ $product->id }}" @selected(old('product_id')==$product->id)>{{
+                                <option value="{{ $product->id }}" @selected(old('product_id')==$product->id) datalocation="{{ $product->location->name }}" >{{
                                     ucfirst($product->name) .' - '. $product->item_code }}</option>
                                 @empty
                                 @endforelse
@@ -66,7 +66,12 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <label for="qty" class="form-label">Qty<span class="text-danger">*</span></label>
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" disabled>
+                        </div>
+
+                        <div class="col-sm-12 mb-3">
+                            <label for="qty" class="form-label">Recv Qty<span class="text-danger">*</span></label>
                             <input type="number" name="qty" id="qty" min="1" step='1' value="{{ old('qty') }}"
                                 class="form-control @error('qty') is-invalid @enderror" placeholder="1" required>
                             @error('qty')
@@ -75,7 +80,7 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <label for="price" class="form-label">Price <span class="text-danger">*</span></label>
+                            <label for="price" class="form-label">Unit Cost <span class="text-danger">*</span></label>
                             <input type="number" name="price" id="price" min="0" step='any' value="{{ old('price') }}"
                                 class="form-control @error('price') is-invalid @enderror" placeholder="0.00">
                             @error('price')
@@ -84,7 +89,7 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <label for="price" class="form-label">Total <span class="text-danger">*</span></label>
+                            <label for="price" class="form-label">Line Total <span class="text-danger">*</span></label>
                             <input type="number" name="price" id="total" class="form-control" placeholder="0.00" disabled>
                         </div>
 
@@ -110,6 +115,7 @@
 @section('scripts')
 <script>
     $(document).ready(function(){
+
         total_price_count();
         $('#qty, #price').on('change', function(){
             total_price_count();
@@ -122,6 +128,11 @@
             }
         }
 
+
+        $('#product_id').change(function(){
+            var location = $('option:selected', this).attr('datalocation');
+            $('#location').val(location);
+        });
     });
 </script>
 @endsection

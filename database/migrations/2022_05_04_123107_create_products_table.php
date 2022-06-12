@@ -15,14 +15,16 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('item_code');
+            $table->string('item_code')->unique();
             $table->string('name');
             $table->string('description');
+            $table->string('location');
             $table->float('price');
             $table->float('sale_price')->nullable();
-            $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('subcategory_id')->nullable()->constrained('sub_categories')->onDelete('set null');
-            $table->foreignId('location_id')->nullable()->constrained()->onDelete('set null');
+            $table->float('tax')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained()->onDelete('SET NULL');
+            $table->foreignId('subcategory_id')->nullable()->constrained('sub_categories')->onDelete('SET NULL');
+
             $table->timestamps();
             $table->softDeletes();
         });

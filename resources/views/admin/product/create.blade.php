@@ -34,7 +34,7 @@
                     <div class="row">
 
                         <div class="col-sm-12 mb-3">
-                            <label for="item_code" class="form-label">item Code <span
+                            <label for="item_code" class="form-label">Item Code <span
                                     class="text-danger">*</span></label>
                             <input type="text" name="item_code" value="{{ old('item_code') }}" maxlength="100"
                                 class="form-control @error('item_code') is-invalid @enderror" placeholder="item code"
@@ -66,15 +66,13 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <label for="location_id" class="form-label">Select Location
-                                <span class="text-danger">*</span></label>
-                            <select name="location_id" id="location_id"
-                                class="form-control @error('location_id') is-invalid @enderror" required>
-                                @forelse ($locations as $id => $location)
-                                <option value="{{ $id }}" @selected(old('location_id')==$id)>{{ $location }}</option>
-                                @empty
-                                @endforelse
-                            </select>
+                            <label for="location" class="form-label">Location (Bin Number, Sheif)
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="location" value="{{ old('location') }}" maxlength="220"
+                                class="form-control @error('location') is-invalid @enderror"
+                                placeholder="Location" required>
+
                             @error('location_id')
                             <div class="text-danger fw-bold">{{ $message }}</div>
                             @enderror
@@ -107,8 +105,7 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <label for="price" class="form-label">Actual Price <span
-                                    class="text-danger">*</span></label>
+                            <label for="price" class="form-label">Unit Price <span class="text-danger">*</span></label>
                             <input type="number" name="price" id="price" step='any' value="{{ old('price') }}"
                                 class="form-control @error('price') is-invalid @enderror" placeholder="0.00" required>
                             @error('price')
@@ -127,7 +124,17 @@
                         </div>
 
                         <div class="col-sm-12 mb-3">
-                            <button type="submit" class="btn btn-primary px-5 float-end">Create New Customer</button>
+                            <label for="warn_qty" class="form-label">Warn Qty </label>
+                            <input type="number" name="warn_qty" id="warn_qty" step='any'
+                                value="{{ old('warn_qty') }}"
+                                class="form-control @error('warn_qty') is-invalid @enderror" min="1" placeholder="0">
+                            @error('warn_qty')
+                            <div class="text-danger fw-bold">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-sm-12 mb-3">
+                            <button type="submit" class="btn btn-primary px-5 float-end">Create New Product</button>
                         </div>
                     </div>
                 </form>
